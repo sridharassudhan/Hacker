@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
+    <title>Cats.io</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color : lightgray;
+        }
+
+        .h1 {
+            text-align: center;
+            font-family: "Zen Tokyo Zoo", cursive;
+        }
+
+        .card {
+            margin: 0;
+            padding: 0;
+        }
+
+        .card-inner {
+            /* color: inherit; */
+            border: 2px solid green;
+            padding: 4px;
+            margin: 2px 1px 2px 1px;
+            min-height: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        /* .row{
+    align-items: baseline;    
+} */
+        li {
+            list-style-type: none;
+        }
+
+        .testing {
+            position: sticky;
+            top: 0;
+            /* z-index: 100; */
+            background-color: RGB(33, 37, 41);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container bg-dark text-white" style="max-height:100%">
+        <!-- Header -->
+        <div class="row testing">
+            <div class="h1 my-2 ">Cat Api</div>
+            <div class="col"></div>
+            <div class="col-md-8 col-sm-12">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" placeholder="Search Cat" id="searchText">
+                    <button class="btn btn-outline-secondary" type="button"
+                        onclick="searchCat(); return false">Search</button>
+                </div>
+            </div>
+            <div class="col ">
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                    data-bs-target="#staticBackdrop" onclick="viewCat(); return false">
+                    Random Pic
+                </button>
+            </div>
+        </div>
+
+        <!-- Code for Displaying Model content -->
+        <div class="modal fade text-dark" id="staticBackdrop" data-bs-keyboard="false" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="modalBody">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Display -->
+        <div class="row m-5 text-md-center overflow-auto" id="content">
+        </div>
+    </div>
+
+    <script>
+        var BASE_API_URL = `https://cataas.com/api/cats`;
+        var CAT_IMG_URL = `https://cataas.com/cat/`;
+        var globalCatData = null;
+
+        window.onload = getCatData();
+        async function getCatData(tag = "") {
+            try {
+                // Fetch data from API
+                if (tag === "") {
+                    if (globalCatData === null) {
+                        var data = await fetch(BASE_API_URL);
+                        var response = await data.json();
+                        globalCatData = response;
+                    } else {
+                        var response = globalCatData;
+                        console.log("Reffering the cache instead of API call");
+                    }
+                } else {
+                    var data = await fetch(`${BASE_API_URL}?tags=${tag}`);
+                    var response = await data.json();
+                }
+                // console.log(response);
+
+                var container = document.getElementById("content");
+                container.innerHTML = "";
+
+                response.forEach((element) => {
+                    // console.log(element.id, element.tags);
+                    var colDiv = document.createElement("div");
+                    colDiv.classList.add("col-lg-4");
+                    colDiv.classList.add("py-2");
+                    container.appendChild(colDiv);
+
+                    //Card Div and tooltip
+                    var cardDiv = document.createElement("div");
+                    cardDiv.classList.add("card-inner");
+                    cardDiv.id = element.id;
+                    cardDiv.setAttribute("data-toggle", "tooltip");
+                    cardDiv.setAttribute("data-placement", "top");
+                    cardDiv.setAttribute(
+                        "title",
+                        `Tags : ${element.tags} , Created at: ${element.created_at}`
+                    );
+                    cardDiv.setAttribute("data-bs-toggle", "modal");
+                    cardDiv.setAttribute("data-bs-target", "#staticBackdrop");
+                    cardDiv.setAttribute("onclick", `viewCat(this.id)`);
+                    colDiv.appendChild(cardDiv);
+
+                    // Image tag
+                    var catImage = document.createElement("img");
+                    catImage.src = `${CAT_IMG_URL}${element.id}`;
+                    catImage.alt = `${element.id}  ${element.created_at}`;
+                    catImage.classList.add("img-fluid");
+                    catImage.classList.add("align-self-center");
+                    cardDiv.appendChild(catImage);
+                });
+            } catch (error) {
+                console.log("Error while fetching API" + error);
+            }
+        }
+
+        function searchCat() {
+            var searchText = document.getElementById("searchText");
+            console.log(searchText.value);
+            getCatData(searchText.value);
+        }
+
+        async function viewCat(id = null) {
+            try {
+                if (globalCatData === null) {
+                    var data = await fetch(BASE_API_URL);
+                    var response = await data.json();
+                    globalCatData = response;
+                } else {
+                    var response = await globalCatData;
+                    console.log("Reffering the cache instead of API call");
+                }
+                // console.log(response, id);
+                var element;
+                if (id !== null) {
+                    for (i = 0; i < response.length; i++) {
+                        if (response[i].id === id) {
+                            element = response[i];
+                            break;
+                        }
+                    }
+                } else {
+                    var randomNo = Math.floor(Math.random() * response.length);
+                    element = response[randomNo];
+                }
+
+                document.getElementById("modalBody").innerHTML = "";
+
+                var catImage = document.createElement("img");
+                catImage.src = `${CAT_IMG_URL}${element.id}`;
+                catImage.alt = `${element.id}  ${element.created_at}`;
+                catImage.classList.add("img-fluid");
+                catImage.classList.add("align-self-center");
+                document.getElementById("modalBody").append(catImage);
+
+                var hr = document.createElement("hr");
+                document.getElementById("modalBody").append(hr);
+
+                var ul = document.createElement("ul");
+                document.getElementById("modalBody").append(ul);
+
+                var li = document.createElement("li");
+                ul.appendChild(li);
+                li.innerText = `Image URL : ${CAT_IMG_URL}${element.id}`;
+
+                let tag = "No Tag assigned";
+                if (element.tags.length !== 0) {
+                    tag = element.tags.join();
+                    console.log(tag);
+                }
+                var li = document.createElement("li");
+                ul.appendChild(li);
+                li.innerText = `Tags : ${tag}`;
+            } catch (error) {
+                console.log("Error while fetching API" + error);
+            }
+        }
+
+    </script>
+</body>
+
+</html>
